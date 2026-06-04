@@ -26,21 +26,34 @@ def prepare_and_freeze_data():
     
     print(f"Total Aggregated Corpus Size: {len(df_combined)} rows.")
 
-    # 4. Generate Train and Test Splits (80/20)
-    # The random_state=42 locks the shuffle so it is perfectly reproducible
-    train_df, test_df = train_test_split(
+    # 4. Generate the 3-Way Stratified Split (64% Train, 16% Val, 20% Test)
+    # The random_state=42 locks the shuffle so it is perfectly reproducible (ie: every time script is run, same data split instead of diff split)
+    # FIRST SPLIT: Carve out the 20% Test Set
+    train_val_df, test_df = train_test_split(
         df_combined, 
         test_size=0.20, 
         random_state=42, 
         stratify=df_combined['label']
     )
-
+    
+    # SECOND SPLIT: Split the remaining 80% into Train (64%) and Validation (16%)
+    # By taking 20% of the 80% chunk, we isolate exactly 16% for validation
+    train_df, val_df = train_test_split(
+        train_val_df, 
+        test_size=0.20, 
+        random_state=42, 
+        stratify=train_val_df['label']
+    )
     # 5. Lock and Freeze the partitions to CSV formats
     os.makedirs("data", exist_ok=True)
     train_df.to_csv("data/frozen_train_set.csv", index=False)
+    val_df.to_csv("data/frozen_val_set.csv", index=False)
     test_df.to_csv("data/frozen_test_set.csv", index=False)
     
-    print("Milestone 2a Success: Splits strictly frozen in data/ directory!")
+    print("\n Milestone 2a Update Success: 3-Way Splits is frozen!")
+    print(f"   -> Train Set:      {len(train_df)} rows (~64%)")
+    print(f"   -> Validation Set: {len(val_df)} rows (~16%)")
+    print(f"   -> Test Set:       {len(test_df)} rows (~20%)")
 
 if __name__ == "__main__":
     prepare_and_freeze_data()
