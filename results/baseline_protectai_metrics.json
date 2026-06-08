@@ -1,0 +1,8 @@
+{
+    "model": "protectai/deberta-v3-base-prompt-injection-v2",
+    "dataset_size": 1104,
+    "accuracy": 0.7337,
+    "precision": 0.6682,
+    "recall": 0.653,
+    "f1_score": 0.6605
+}
