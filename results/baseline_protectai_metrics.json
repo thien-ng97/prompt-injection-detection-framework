@@ -4,5 +4,10 @@
     "accuracy": 0.7337,
     "precision": 0.6682,
     "recall": 0.653,
-    "f1_score": 0.6605
+    "f1_score": 0.6605,
+    "false_positive_rate": 0.2132,
+    "false_positive": 142,
+    "false_negative": 152,
+    "true_positive": 286,
+    "true_negative": 524
 }

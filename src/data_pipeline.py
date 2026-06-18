@@ -2,6 +2,8 @@ import os
 import pandas as pd
 from datasets import load_dataset
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 def prepare_and_freeze_data():
     print("Loading raw data streams from Hugging Face...")
@@ -54,6 +56,40 @@ def prepare_and_freeze_data():
     print(f"   -> Train Set:      {len(train_df)} rows (~64%)")
     print(f"   -> Validation Set: {len(val_df)} rows (~16%)")
     print(f"   -> Test Set:       {len(test_df)} rows (~20%)")
+
+    # 6. Generate visual proof of the splits
+    print("Generating visual proof of data splits...")
+    os.makedirs("results", exist_ok=True)
+    
+    plt.figure(figsize=(8, 6))
+    splits = ['Train (64%)', 'Validation (16%)', 'Test (20%)']
+    counts = [len(train_df), len(val_df), len(test_df)]
+    
+    # Create the bar chart using Seaborn v0.14.0 
+    ax = sns.barplot(
+        x=splits, 
+        y=counts, 
+        hue=splits, 
+        palette="Blues_r", 
+        legend=False
+    )
+    
+    # Stamp the exact row counts on top of each bar
+    for container in ax.containers:
+        ax.bar_label(container, padding=5, color='black', fontsize=12, fontweight='bold')
+        
+    # Extend the Y-axis slightly so the text labels don't hit the top border
+    ax.set_ylim(0, max(counts) * 1.15)
+        
+    plt.title("Frozen Data Partition Sizes (Total Corpus: 5,517)")
+    plt.ylabel("Number of Rows")
+    plt.tight_layout()
+    
+    # Save the chart and clear the canvas
+    plt.savefig("results/frozen_data_splits.png")
+    plt.close()
+    
+    print("Visual proof saved to results/frozen_data_splits.png")
 
 if __name__ == "__main__":
     prepare_and_freeze_data()

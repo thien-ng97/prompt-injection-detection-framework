@@ -3,7 +3,7 @@ import json
 import torch
 import os
 from transformers import pipeline
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from tqdm import tqdm
 
 # transformers to load a pre-trained model and data tokenizer
@@ -47,6 +47,11 @@ def run_protectai_baseline():
         pred_label = 1 if out['label'] == 'INJECTION' else 0
         predictions.append(pred_label)
 
+    # Extract True Negatives, False Positives, False Negatives, and True Positives
+    tn, fp, fn, tp = confusion_matrix(true_labels, predictions).ravel()
+    
+    # Calculate False Positive Rate: FP / Total Actual Negatives
+    fpr = fp / (fp + tn)
     # 5. Calculate ML Metrics
     print("\n Calculating performance metrics...")
     metrics = {
@@ -55,7 +60,12 @@ def run_protectai_baseline():
         "accuracy": round(accuracy_score(true_labels, predictions), 4),
         "precision": round(precision_score(true_labels, predictions), 4),
         "recall": round(recall_score(true_labels, predictions), 4),
-        "f1_score": round(f1_score(true_labels, predictions), 4)
+        "f1_score": round(f1_score(true_labels, predictions), 4),
+        "false_positive_rate": round(fpr, 4),
+        "false_positive": int(fp),
+        "false_negative": int(fn),
+        "true_positive": int(tp),
+        "true_negative": int(tn)
     }
 
     # Print to console
