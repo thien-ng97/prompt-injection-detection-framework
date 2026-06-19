@@ -28,3 +28,23 @@ pip install -r requirements.txt
 
 # 3. Authenticate with Hugging Face (Required for the both dataset, HF access token needed)
 hf auth login
+
+
+
+## Milestone 3: Production Model & Test Metrics
+
+The primary DistilBERT model has been successfully trained, fine-tuned, and validated. Due to file size constraints, the final trained weights and tokenizer configurations are securely hosted on the Hugging Face Hub.
+
+📦 **Hugging Face Model Repository:** [thienyu/prompt-injection-guardrail](https://huggingface.co/thienyu/prompt-injection-guardrail)
+
+### Final Production Test Results (Blind 20% Dataset)
+- **Accuracy:** 87.95%
+- **Precision:** 92.48%
+- **Recall:** 75.80%
+- **F1-Score:** 83.31%
+- **False Positive Rate (FPR):** 4.05% *(Satisfies strict < 5% constraint)*
+
+### Local Inference Verification
+To verify the basic inference loop locally, ensure your environment is activated and execute:
+```bash
+python src/evaluate_custom_model.py
