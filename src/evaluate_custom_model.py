@@ -13,7 +13,7 @@ def evaluate_custom_model():
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Using hardware acceleration: {device}")
 
-    print("🤖 Loading custom DistilBERT model from local storage.")
+    print(" Loading custom DistilBERT model from local storage.")
     # Pointing to the local directory where the custom model is saved
     classifier = pipeline(
         "text-classification", 
