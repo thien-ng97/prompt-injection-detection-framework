@@ -9,5 +9,6 @@
     "false_positives": 27,
     "false_negatives": 106,
     "true_positives": 332,
-    "true_negatives": 639
+    "true_negatives": 639,
+    "avg_latency_ms": 10.9
 }
