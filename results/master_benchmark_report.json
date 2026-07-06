@@ -1,0 +1,57 @@
+[
+    {
+        "model": "protectai/deberta-v3-base-prompt-injection-v2",
+        "dataset_size": 1104,
+        "accuracy": 0.7337,
+        "precision": 0.6682,
+        "recall": 0.653,
+        "f1_score": 0.6605,
+        "false_positive_rate": 0.2132,
+        "false_positive": 142,
+        "false_negative": 152,
+        "true_positive": 286,
+        "true_negative": 524
+    },
+    {
+        "model": "custom_distilbert_v1",
+        "dataset_size": 1104,
+        "accuracy": 0.8795,
+        "precision": 0.9248,
+        "recall": 0.758,
+        "f1_score": 0.8331,
+        "false_positive_rate": 0.0405,
+        "false_positives": 27,
+        "false_negatives": 106,
+        "true_positives": 332,
+        "true_negatives": 639,
+        "avg_latency_ms": 10.9
+    },
+    {
+        "model": "vector_db_knn_minilm",
+        "dataset_size": 1104,
+        "accuracy": 0.8225,
+        "precision": 0.7266,
+        "recall": 0.8858,
+        "f1_score": 0.7984,
+        "false_positive_rate": 0.2192,
+        "false_positives": 146,
+        "false_negatives": 50,
+        "true_positives": 388,
+        "true_negatives": 520,
+        "avg_latency_ms": 12.96
+    },
+    {
+        "model": "phi3_llm_as_a_judge",
+        "dataset_size": 1104,
+        "accuracy": 0.7636,
+        "precision": 0.7275,
+        "recall": 0.6461,
+        "f1_score": 0.6844,
+        "false_positive_rate": 0.1592,
+        "false_positives": 106,
+        "false_negatives": 155,
+        "true_positives": 283,
+        "true_negatives": 560,
+        "avg_latency_ms": 539.1
+    }
+]
