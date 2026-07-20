@@ -1,0 +1,15 @@
+{
+    "model": "thienyu/prompt-injection-guardrail",
+    "evaluation_type": "Out-of-Distribution (BIPIA)",
+    "dataset_size": 2000,
+    "accuracy": 0.5215,
+    "precision": 0.5485,
+    "recall": 0.243,
+    "f1_score": 0.3368,
+    "false_positive_rate": 0.2,
+    "false_positives": 200,
+    "false_negatives": 757,
+    "true_positives": 243,
+    "true_negatives": 800,
+    "avg_latency_ms": 15.68
+}
