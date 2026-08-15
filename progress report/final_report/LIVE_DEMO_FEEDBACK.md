@@ -1,10 +1,4 @@
-# Live Demo — Supervisor Feedback
-
-**Project:** Detecting Direct Prompt Injection Attacks in LLM Applications
-**Student:** Thien Nguyen (219183821)
-**Supervisor:** Prof. Sukhwant Kaur Sagar
-**Course:** EECS 4080 — Summer 2026
-**Subject:** `live_infer.py` — latency measurement, and running the demo on the day
+# Live Demo Feedback
 
 ---
 
@@ -174,7 +168,8 @@ straight past it.
 
 - **Keep the demo under one minute.** It supports the talk; it is not the talk.
 - **Have a screen recording ready** in case the Hugging Face download stalls or the network
-  misbehaves. A demo that breaks live costs more than it gains.
+  misbehaves. A demo that breaks live costs more than it gains. Upload the recording under this
+  folder as well so that I can watch it before your presentation.
 - **Rehearse it until it cannot fail.** If you are not confident it will run cleanly, skip it
   — the deck stands on its own.
 
@@ -194,5 +189,3 @@ during your slot.
 
 ---
 
-*Prof. Sukhwant Kaur Sagar*
-*Assistant Professor (Teaching Stream), Lassonde School of Engineering, York University*
