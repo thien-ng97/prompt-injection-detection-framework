@@ -2,82 +2,100 @@ import pandas as pd
 import json
 import torch
 import os
+import time
+import statistics
 from transformers import pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from tqdm import tqdm
 
-# transformers to load a pre-trained model and data tokenizer
-# pytorch to define the optimization logic, loss function and backpropagation
-# sklearn to calculate the performance metrics
-# tqdm to show a progress bar
+# Match DistilBERT eval protocol (evaluate_custom_model.py):
+# MPS, truncation=True, max_length=512, batch_size=1, wall-clock mean ms/prompt.
+# Plus professor refinements: discard warm-up passes; report median alongside mean.
+
+
+WARMUP_N = 5  # discard first-call MPS graph compilation before timing
 
 
 def run_protectai_baseline():
     print("Loading frozen test set...")
-    # 1. Load the frozen 20% test partition
     df_test = pd.read_csv("data/frozen_test_set.csv")
-    
-    # 2. Hardware Acceleration
-    # Automatically utilizes Apple Silicon (MPS) if available for massive speedups
+
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     print(f"Using hardware acceleration: {device}")
 
-    # 3. Initialize the ProtectAI Pipeline
     print("Downloading and loading ProtectAI DeBERTa model...")
     classifier = pipeline(
-        "text-classification", 
-        model="protectai/deberta-v3-base-prompt-injection-v2", 
+        "text-classification",
+        model="protectai/deberta-v3-base-prompt-injection-v2",
         device=device,
-        truncation=True, # Crucial: Truncates extremely long prompts to fit model memory
-        max_length=512
+        truncation=True,
+        max_length=512,
     )
 
-    # 4. Run Predictions
-    print(f"Evaluating {len(df_test)} test prompts. Please wait a minute...")
-    
-    # Extract just the text column as a list
-    texts = df_test['text'].astype(str).tolist()
-    true_labels = df_test['label'].tolist()
-    
-    # Run the pipeline over the texts with a progress bar
+    texts = df_test["text"].astype(str).tolist()
+    true_labels = df_test["label"].tolist()
+    n = len(texts)
+    print(f"Evaluating {n} test prompts (batch_size=1, sequential)...")
+
+    # Warm-up: compile MPS graph / caches without counting toward latency
+    warmup_n = min(WARMUP_N, n)
+    print(f"Warming up on {warmup_n} prompts (not timed)...")
+    for i in range(warmup_n):
+        _ = classifier(texts[i], batch_size=1)
+
     predictions = []
-    for out in tqdm(classifier(texts, batch_size=16), total=len(texts)):
+    latencies_ms = []
+
+    for text in tqdm(texts, total=n):
+        t0 = time.perf_counter()
+        out = classifier(text, batch_size=1)[0]
+        t1 = time.perf_counter()
+        latencies_ms.append((t1 - t0) * 1000.0)
+
         # ProtectAI outputs 'SAFE' or 'INJECTION'
-        # We must map this to our binary 0 and 1 schema
-        pred_label = 1 if out['label'] == 'INJECTION' else 0
+        pred_label = 1 if out["label"] == "INJECTION" else 0
         predictions.append(pred_label)
 
-    # Extract True Negatives, False Positives, False Negatives, and True Positives
+    avg_latency_ms = statistics.mean(latencies_ms)
+    median_latency_ms = statistics.median(latencies_ms)
+
     tn, fp, fn, tp = confusion_matrix(true_labels, predictions).ravel()
-    
-    # Calculate False Positive Rate: FP / Total Actual Negatives
-    fpr = fp / (fp + tn)
-    # 5. Calculate ML Metrics
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+
     print("\n Calculating performance metrics...")
     metrics = {
         "model": "protectai/deberta-v3-base-prompt-injection-v2",
-        "dataset_size": len(df_test),
-        "accuracy": round(accuracy_score(true_labels, predictions), 4),
-        "precision": round(precision_score(true_labels, predictions), 4),
-        "recall": round(recall_score(true_labels, predictions), 4),
-        "f1_score": round(f1_score(true_labels, predictions), 4),
-        "false_positive_rate": round(fpr, 4),
+        "dataset_size": int(n),
+        "accuracy": float(round(accuracy_score(true_labels, predictions), 4)),
+        "precision": float(round(precision_score(true_labels, predictions), 4)),
+        "recall": float(round(recall_score(true_labels, predictions), 4)),
+        "f1_score": float(round(f1_score(true_labels, predictions), 4)),
+        "false_positive_rate": float(round(fpr, 4)),
         "false_positive": int(fp),
         "false_negative": int(fn),
         "true_positive": int(tp),
-        "true_negative": int(tn)
+        "true_negative": int(tn),
+        "avg_latency_ms": float(round(avg_latency_ms, 2)),
+        "median_latency_ms": float(round(median_latency_ms, 2)),
+        "warmup_prompts_discarded": int(warmup_n),
+        "device": str(device),
     }
 
-    # Print to console
     for key, value in metrics.items():
-        print(f"   -> {key.capitalize()}: {value}")
+        if key == "false_positive_rate":
+            print(f"   -> {key.replace('_', ' ').title()}: {value} ({value * 100:.2f}%)")
+        elif key in ("avg_latency_ms", "median_latency_ms"):
+            print(f"   -> {key.replace('_', ' ').title()}: {value} ms/prompt")
+        else:
+            print(f"   -> {key.replace('_', ' ').title()}: {value}")
 
-    # 6. Save results to the framework
     os.makedirs("results", exist_ok=True)
-    with open("results/baseline_protectai_metrics.json", "w") as f:
+    out_path = "results/baseline_protectai_metrics.json"
+    with open(out_path, "w") as f:
         json.dump(metrics, f, indent=4)
-        
-    print("\n Milestone 2b Baseline Success: Metrics locked in results/baseline_protectai_metrics.json")
+
+    print(f"\n Milestone 2b Baseline Success: Metrics locked in {out_path}")
+
 
 if __name__ == "__main__":
     run_protectai_baseline()

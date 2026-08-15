@@ -9,5 +9,9 @@
     "false_positive": 142,
     "false_negative": 152,
     "true_positive": 286,
-    "true_negative": 524
+    "true_negative": 524,
+    "avg_latency_ms": 38.38,
+    "median_latency_ms": 28.47,
+    "warmup_prompts_discarded": 5,
+    "device": "mps"
 }
