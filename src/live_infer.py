@@ -12,6 +12,7 @@ Usage:
 """
 
 import argparse
+import statistics
 import time
 import torch
 from transformers import pipeline, AutoTokenizer
@@ -21,6 +22,16 @@ LABEL_MAP = {
     0: "SAFE",
     1: "MALICIOUS",
 }
+
+# Timing protocol (per LIVE_DEMO_FEEDBACK): warm GPU, then median of repeats.
+N_WARMUP = 30
+N_REPEATS = 20
+
+
+def sync():
+    """MPS is async — force completion before reading the clock."""
+    if torch.backends.mps.is_available():
+        torch.mps.synchronize()
 
 
 def load_classifier():
@@ -32,6 +43,7 @@ def load_classifier():
     # Match training: keep the END of long prompts (payload often sits there)
     tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID, truncation_side="left")
 
+    # Match evaluate_custom_model.py: MPS, truncation=True, max_length=512
     classifier = pipeline(
         "text-classification",
         model=HF_MODEL_ID,
@@ -43,12 +55,15 @@ def load_classifier():
     return classifier
 
 
-def classify(classifier, text: str) -> dict:
-    # End-to-end latency: tokenize → model forward → Softmax label
-    start = time.perf_counter()
-    out = classifier(text)[0]
-    latency_ms = (time.perf_counter() - start) * 1000.0
+def warmup(classifier, n_warmup: int = N_WARMUP):
+    print(f"Warming up ({n_warmup} throwaway inferences)...")
+    for _ in range(n_warmup):
+        classifier("warm-up prompt for timing", batch_size=1)
+    sync()
+    print("Ready.\n")
 
+
+def parse_prediction(out: dict) -> dict:
     # HF returns "LABEL_0" / "LABEL_1" (or sometimes "0" / "1")
     label_str = out["label"]
     pred_id = int(label_str.split("_")[-1]) if "LABEL" in label_str else int(label_str)
@@ -57,15 +72,34 @@ def classify(classifier, text: str) -> dict:
         "label_id": pred_id,
         "confidence": float(out["score"]),
         "raw_label": label_str,
-        "latency_ms": float(latency_ms),
     }
+
+
+def classify(classifier, text: str, n_repeats: int = N_REPEATS) -> dict:
+    """Classify once for the label; time n_repeats synced runs and take the median."""
+    timings_ms = []
+    out = None
+    for _ in range(n_repeats):
+        sync()
+        t0 = time.perf_counter()
+        out = classifier(text, batch_size=1)[0]
+        sync()
+        timings_ms.append((time.perf_counter() - t0) * 1000.0)
+
+    result = parse_prediction(out)
+    result["latency_ms"] = float(statistics.median(timings_ms))
+    result["n_repeats"] = int(n_repeats)
+    return result
 
 
 def print_result(result: dict):
     print("-" * 50)
     print(f"  Result:     {result['prediction']}")
     print(f"  Confidence: {result['confidence']:.2%}")
-    print(f"  Latency:    {result['latency_ms']:.2f} ms")
+    print(
+        f"  Latency:    {result['latency_ms']:.1f} ms  "
+        f"(median of {result['n_repeats']}, warm)"
+    )
     print("-" * 50)
 
 
@@ -99,6 +133,7 @@ def main():
     args = parser.parse_args()
 
     classifier = load_classifier()
+    warmup(classifier)
 
     if args.prompt is not None:
         result = classify(classifier, args.prompt)
